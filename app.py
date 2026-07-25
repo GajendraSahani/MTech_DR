@@ -761,43 +761,42 @@ def render_care_recommendations(pred_class: int):
     do_items = "".join(f"<li>{item}</li>" for item in guide["do"])
     dont_items = "".join(f"<li>{item}</li>" for item in guide["dont"])
 
-    st.markdown(
-        f"""
-        <div class="care-wrap">
-            <div class="care-header">◆ PERSONALIZED CARE PLAN · STAGE {pred_class}</div>
-            <div class="care-title">{guide["headline"]}</div>
-            <div class="care-sub">{guide["summary"]}</div>
+    html_content = f"""
+<div class="care-wrap">
+    <div class="care-header">◆ PERSONALIZED CARE PLAN · STAGE {pred_class}</div>
+    <div class="care-title">{guide["headline"]}</div>
+    <div class="care-sub">{guide["summary"]}</div>
 
-            <div class="urgency-strip" style="background: {urgency['color']}22; border: 1px solid {urgency['color']}66;">
-                <div class="icon">{urgency['icon']}</div>
-                <div>
-                    <div style="color:{urgency['color']};font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">
-                        {urgency['level']}
-                    </div>
-                    <div style="color:#e6edf3;">{urgency['text']}</div>
-                </div>
+    <div class="urgency-strip" style="background: {urgency['color']}22; border: 1px solid {urgency['color']}66;">
+        <div class="icon">{urgency['icon']}</div>
+        <div>
+            <div style="color:{urgency['color']};font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">
+                {urgency['level']}
             </div>
-
-            <div class="care-cols" style="margin-top:18px;">
-                <div class="care-col do">
-                    <h4>✅ Recommended Actions (Do's)</h4>
-                    <ul class="care-list do">{do_items}</ul>
-                </div>
-                <div class="care-col dont">
-                    <h4>⛔ Things to Avoid (Don'ts)</h4>
-                    <ul class="care-list dont">{dont_items}</ul>
-                </div>
-            </div>
-
-            <div style="margin-top:16px;font-size:11.5px;color:#6b7a8f;letter-spacing:0.05em;line-height:1.5;">
-                Guidance summarized from American Academy of Ophthalmology (AAO), American Diabetes Association (ADA),
-                National Eye Institute (NIH/NEI), WHO, and Mayo Clinic. For educational use only —
-                always follow your physician's personalized advice.
-            </div>
+            <div style="color:#e6edf3;">{urgency['text']}</div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    </div>
+
+    <div class="care-cols" style="margin-top:18px;">
+        <div class="care-col do">
+            <h4>✅ Recommended Actions (Do's)</h4>
+            <ul class="care-list do">{do_items}</ul>
+        </div>
+        <div class="care-col dont">
+            <h4>⛔ Things to Avoid (Don'ts)</h4>
+            <ul class="care-list dont">{dont_items}</ul>
+        </div>
+    </div>
+
+    <div style="margin-top:16px;font-size:11.5px;color:#6b7a8f;letter-spacing:0.05em;line-height:1.5;">
+        Guidance summarized from American Academy of Ophthalmology (AAO), American Diabetes Association (ADA),
+        National Eye Institute (NIH/NEI), WHO, and Mayo Clinic. For educational use only —
+        always follow your physician's personalized advice.
+    </div>
+</div>
+"""
+    
+    st.markdown(html_content, unsafe_allow_html=True)
 
 
 def main():
