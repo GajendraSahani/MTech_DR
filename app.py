@@ -7,12 +7,339 @@ import plotly.express as px
 import streamlit as st
 import tensorflow as tf
 
+
 st.set_page_config(
-    page_title="Diabetic Retinopathy Classifier",
+    page_title="RetinaScan AI — Diabetic Retinopathy Classifier",
     page_icon="👁️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    /* Animated aurora background */
+    .stApp {
+        background: linear-gradient(-45deg, #0f0c29, #1a1a4e, #16213e, #0f3460, #1a1a2e);
+        background-size: 400% 400%;
+        animation: gradientShift 18s ease infinite;
+        color: #e6edf3;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    @keyframes gradientShift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Floating orbs */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: -10%;
+        left: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(0,229,255,0.25) 0%, transparent 70%);
+        border-radius: 50%;
+        filter: blur(60px);
+        z-index: 0;
+        animation: float1 20s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .stApp::after {
+        content: "";
+        position: fixed;
+        bottom: -10%;
+        right: -10%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(255,64,129,0.20) 0%, transparent 70%);
+        border-radius: 50%;
+        filter: blur(70px);
+        z-index: 0;
+        animation: float2 25s ease-in-out infinite;
+        pointer-events: none;
+    }
+    @keyframes float1 {
+        0%,100% { transform: translate(0, 0); }
+        50%     { transform: translate(120px, 80px); }
+    }
+    @keyframes float2 {
+        0%,100% { transform: translate(0, 0); }
+        50%     { transform: translate(-100px, -60px); }
+    }
+
+    /* Force text visibility */
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
+        color: #e6edf3;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #ffffff !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        letter-spacing: -0.02em;
+    }
+
+    /* Sidebar glass */
+    section[data-testid="stSidebar"] {
+        background: rgba(15, 12, 41, 0.75) !important;
+        backdrop-filter: blur(18px);
+        border-right: 1px solid rgba(0, 229, 255, 0.15);
+    }
+    section[data-testid="stSidebar"] * {
+        color: #cdd9e5 !important;
+    }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #00e5ff !important;
+    }
+
+    /* Hero */
+    .hero-wrap {
+        position: relative;
+        padding: 42px 36px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(0,229,255,0.10), rgba(255,64,129,0.08));
+        border: 1px solid rgba(0, 229, 255, 0.25);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+        margin-bottom: 26px;
+        overflow: hidden;
+    }
+    .hero-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        background: rgba(0, 229, 255, 0.15);
+        border: 1px solid rgba(0, 229, 255, 0.4);
+        color: #00e5ff;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        margin-bottom: 18px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .hero-title {
+        font-size: 54px;
+        font-weight: 700;
+        line-height: 1.05;
+        margin: 0 0 14px 0;
+        background: linear-gradient(90deg, #ffffff 0%, #00e5ff 50%, #ff4081 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .hero-sub {
+        font-size: 17px;
+        color: #b8c5d6 !important;
+        max-width: 780px;
+        line-height: 1.6;
+    }
+    .hero-stats {
+        display: flex;
+        gap: 32px;
+        margin-top: 26px;
+        flex-wrap: wrap;
+    }
+    .stat-box {
+        border-left: 2px solid #00e5ff;
+        padding-left: 14px;
+    }
+    .stat-num {
+        font-size: 26px;
+        font-weight: 700;
+        color: #ffffff;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-label {
+        font-size: 11px;
+        color: #8a9bb0;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    /* Marquee */
+    .marquee-container {
+        overflow: hidden;
+        white-space: nowrap;
+        background: linear-gradient(90deg, rgba(0,229,255,0.08), rgba(255,64,129,0.08));
+        border-top: 1px solid rgba(0, 229, 255, 0.2);
+        border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+        padding: 12px 0;
+        margin: 20px 0 30px 0;
+        border-radius: 8px;
+    }
+    .marquee-track {
+        display: inline-block;
+        animation: marquee 38s linear infinite;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        color: #00e5ff;
+        letter-spacing: 0.08em;
+    }
+    .marquee-track span { margin: 0 40px; }
+    .marquee-track .pink { color: #ff4081; }
+    .marquee-track .green { color: #4CAF50; }
+    .marquee-track .amber { color: #FF9800; }
+    @keyframes marquee {
+        0%   { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+
+    /* Feature cards */
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin: 20px 0 30px 0;
+    }
+    .feature-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(0, 229, 255, 0.5);
+        box-shadow: 0 12px 40px rgba(0, 229, 255, 0.15);
+    }
+    .feature-icon {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    .feature-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 6px;
+    }
+    .feature-desc {
+        font-size: 13px;
+        color: #8a9bb0;
+        line-height: 1.5;
+    }
+
+    /* Result badge */
+    .result-badge {
+        padding: 22px;
+        border-radius: 18px;
+        text-align: center;
+        color: #ffffff;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+        position: relative;
+        overflow: hidden;
+    }
+    .result-badge::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+        pointer-events: none;
+    }
+    .result-badge h2, .result-badge h4 { color: #ffffff !important; margin: 0; }
+    .pulse-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background: #ffffff;
+        border-radius: 50%;
+        margin-right: 8px;
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0%,100% { opacity: 1; transform: scale(1); }
+        50%     { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* File uploader */
+    div[data-testid="stFileUploader"] {
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px dashed rgba(0, 229, 255, 0.4);
+        border-radius: 16px;
+        padding: 10px;
+        transition: all 0.3s ease;
+    }
+    div[data-testid="stFileUploader"]:hover {
+        border-color: #00e5ff;
+        background: rgba(0, 229, 255, 0.05);
+    }
+
+    /* Tabs */
+    button[data-baseweb="tab"] {
+        color: #b8c5d6 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #00e5ff !important;
+    }
+
+    /* Section header */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 18px 0 14px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+    }
+    .section-header .dot {
+        width: 8px;
+        height: 8px;
+        background: #00e5ff;
+        border-radius: 50%;
+        box-shadow: 0 0 12px #00e5ff;
+    }
+    .section-header h3 {
+        margin: 0 !important;
+        font-size: 20px !important;
+    }
+
+    /* Footer */
+    .footer {
+        margin-top: 60px;
+        padding: 24px;
+        text-align: center;
+        border-top: 1px solid rgba(0, 229, 255, 0.15);
+        color: #8a9bb0;
+        font-size: 13px;
+    }
+    .footer .accent { color: #00e5ff; font-family: 'JetBrains Mono', monospace; }
+
+    /* Warning override */
+    div[data-testid="stAlert"] {
+        background: rgba(255, 152, 0, 0.10) !important;
+        border-left: 3px solid #FF9800 !important;
+        border-radius: 12px !important;
+    }
+    div[data-testid="stAlert"] * { color: #ffd699 !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #00e5ff, #ff4081);
+        border-radius: 6px;
+    }
+
+    /* Hide streamlit chrome */
+    #MainMenu, footer { visibility: hidden; }
+    header[data-testid="stHeader"] { background: transparent; }
+
+    /* Main container above orbs */
+    .main .block-container { position: relative; z-index: 1; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 EFF_SIZE = (224, 224)
 
@@ -33,15 +360,15 @@ CLASS_DESCRIPTIONS = {
 }
 
 CLASS_COLORS = {
-    0: "#4CAF50",  # Green
-    1: "#2196F3",  # Blue
-    2: "#FF9800",  # Orange
-    3: "#F44336",  # Red
-    4: "#9C27B0",  # Purple
+    0: "#4CAF50",
+    1: "#2196F3",
+    2: "#FF9800",
+    3: "#F44336",
+    4: "#9C27B0",
 }
 
+
 def crop_black_border(img, tol=7):
-    """Crops empty black margins from eye fundus photos."""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
     mask = gray > tol
     if mask.any():
@@ -50,35 +377,28 @@ def crop_black_border(img, tol=7):
         img = img[rows[0] : rows[-1] + 1, cols[0] : cols[-1] + 1]
     return img
 
+
 def gaussian_blur_subtraction(img, sigma=10):
-    """Applies Gaussian blur subtraction to enhance vessel contrast."""
     blur = cv2.GaussianBlur(img, (0, 0), sigma)
     return cv2.addWeighted(img, 4, blur, -4, 128)
 
+
 def enhance_brightness_contrast(img, alpha=1.2, beta=10):
-    """Adjusts contrast (alpha) and brightness (beta)."""
     return cv2.convertScaleAbs(img, alpha=alpha, beta=beta)
 
+
 def preprocess_fundus_image(pil_img):
-    """Full preprocessing pipeline strictly matching notebook specifications."""
-
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-
     cropped = crop_black_border(img)
     blurred = gaussian_blur_subtraction(cropped)
     enhanced = enhance_brightness_contrast(blurred)
-
-
     resized_bgr = cv2.resize(enhanced, EFF_SIZE)
-
-
     display_rgb = cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB)
     input_rgb = cv2.cvtColor(resized_bgr, cv2.COLOR_BGR2RGB)
-
     return input_rgb, display_rgb
 
+
 def build_head_model():
-    """Reconstructs the classification head architecture."""
     inputs = tf.keras.Input(shape=(1792,), name="features")
     x = tf.keras.layers.BatchNormalization()(inputs)
     x = tf.keras.layers.Dense(1024, kernel_regularizer=tf.keras.regularizers.l2(5e-5))(x)
@@ -94,34 +414,29 @@ def build_head_model():
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dropout(0.3)(x)
     outputs = tf.keras.layers.Dense(5, activation="softmax")(x)
-
     return tf.keras.Model(inputs=inputs, outputs=outputs)
+
 
 @st.cache_resource
 def load_dr_model():
-    """
-    Loads fine-tuned backbone feature extractor and classification head.
-    """
     model_dir = "models"
     full_model_path = os.path.join(model_dir, "eff_finetuned_final.keras")
     head_model_path = os.path.join(model_dir, "fl_best.keras")
 
     if os.path.exists(full_model_path):
-
         full_saved = tf.keras.models.load_model(full_model_path, compile=False)
-        
         try:
-
-             base_backbone = tf.keras.Model(
-                 inputs=full_saved.input, 
-                 outputs=full_saved.get_layer("avg_pool").output
-             )
+            base_backbone = tf.keras.Model(
+                inputs=full_saved.input,
+                outputs=full_saved.get_layer("avg_pool").output,
+            )
         except ValueError:
-
-             gap_layer = [l for l in full_saved.layers if isinstance(l, tf.keras.layers.GlobalAveragePooling2D)][0]
-             base_backbone = tf.keras.Model(inputs=full_saved.input, outputs=gap_layer.output)
+            gap_layer = [
+                l for l in full_saved.layers
+                if isinstance(l, tf.keras.layers.GlobalAveragePooling2D)
+            ][0]
+            base_backbone = tf.keras.Model(inputs=full_saved.input, outputs=gap_layer.output)
     else:
-
         base_backbone = tf.keras.applications.EfficientNetB4(
             weights="imagenet", include_top=False, input_shape=(224, 224, 3), pooling="avg"
         )
@@ -132,18 +447,13 @@ def load_dr_model():
 
     return "split", (base_backbone, head)
 
-def predict(processed_img, model_tuple, use_tta=False, tta_steps=8):
-    """Runs inference on processed image batch with Test-Time Augmentation (TTA) on feature vectors."""
 
+def predict(processed_img, model_tuple, use_tta=False, tta_steps=8):
     img_array = np.expand_dims(processed_img, axis=0).astype(np.float32)
     input_tensor = tf.keras.applications.efficientnet.preprocess_input(img_array)
 
     model_type, (backbone, head) = model_tuple
-
-
     features = backbone(input_tensor, training=False).numpy()
-
-
     base_probs = head(features, training=False).numpy()[0]
 
     if not use_tta:
@@ -156,14 +466,99 @@ def predict(processed_img, model_tuple, use_tta=False, tta_steps=8):
 
     return np.mean(all_preds, axis=0)
 
-def main():
-    st.sidebar.title("🩺 DR Screening Panel")
-    st.sidebar.markdown(
-        "Upload a fundus photograph of the retina to run automated AI screening for Diabetic Retinopathy (DR)."
+
+def render_hero():
+    st.markdown(
+        """
+        <div class="hero-wrap">
+            <div class="hero-badge">◆ AI-Powered Ophthalmology · v2.0</div>
+            <div class="hero-title">RetinaScan AI<br/>Diabetic Retinopathy Detection</div>
+            <div class="hero-sub">
+                A federated-learning powered deep learning system that classifies retinal fundus
+                imagery into 5 clinical severity stages — using an EfficientNetB4 backbone
+                fine-tuned across distributed medical datasets with FedProx aggregation.
+            </div>
+            <div class="hero-stats">
+                <div class="stat-box">
+                    <div class="stat-num">5</div>
+                    <div class="stat-label">Severity Stages</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num">EfficientNetB4</div>
+                    <div class="stat-label">Backbone Model</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num">FedProx</div>
+                    <div class="stat-label">Training Protocol</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-num">TTA×8</div>
+                    <div class="stat-label">Inference Robustness</div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    # Sidebar settings
-    st.sidebar.subheader("⚙️ Model Settings")
+
+def render_marquee():
+    items = (
+        '<span>◉ REAL-TIME FUNDUS ANALYSIS</span>'
+        '<span class="pink">◈ FEDERATED LEARNING PIPELINE</span>'
+        '<span class="green">✓ 5-CLASS SEVERITY DETECTION</span>'
+        '<span class="amber">⚡ TEST-TIME AUGMENTATION</span>'
+        '<span>◉ GAUSSIAN VESSEL ENHANCEMENT</span>'
+        '<span class="pink">◈ EFFICIENTNET-B4 BACKBONE</span>'
+        '<span class="green">✓ CLINICAL-GRADE PREPROCESSING</span>'
+        '<span class="amber">⚡ AI-ASSISTED SCREENING</span>'
+    )
+    st.markdown(
+        f'<div class="marquee-container"><div class="marquee-track">{items}{items}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_features():
+    st.markdown(
+        """
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <div class="feature-title">Deep Neural Backbone</div>
+                <div class="feature-desc">EfficientNetB4 with 1792-dim feature extraction fine-tuned on curated fundus data.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <div class="feature-title">Federated Learning</div>
+                <div class="feature-desc">FedProx aggregation across distributed clinical datasets — privacy preserving.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔬</div>
+                <div class="feature-title">Vessel Enhancement</div>
+                <div class="feature-desc">Gaussian blur subtraction accentuates microaneurysms & hemorrhages.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">TTA Ensemble</div>
+                <div class="feature-desc">Test-Time Augmentation averages multiple perturbed passes for robust predictions.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def main():
+
+    st.sidebar.markdown("### 🩺 DR Screening Panel")
+    st.sidebar.markdown(
+        "<div style='color:#8a9bb0;font-size:13px;line-height:1.5;'>Upload a fundus photograph of the retina to run automated AI screening for Diabetic Retinopathy.</div>",
+        unsafe_allow_html=True,
+    )
+    st.sidebar.markdown("---")
+
+    st.sidebar.markdown("### ⚙️ Inference Settings")
     use_tta = st.sidebar.checkbox(
         "Enable TTA (Test-Time Augmentation)",
         value=True,
@@ -176,24 +571,35 @@ def main():
     )
 
     st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🧬 Model Architecture")
     st.sidebar.markdown(
-        "**Model Architecture:**\n"
-        "- **Backbone:** Fine-Tuned EfficientNetB4\n"
-        "- **Training:** Federated Learning (FedProx)\n"
-        "- **Preprocessing:** Gaussian Blur Subtraction + BGR Resize"
+        "<div style='color:#8a9bb0;font-size:13px;line-height:1.7;'>"
+        "▸ <b style='color:#00e5ff'>Backbone:</b> Fine-Tuned EfficientNetB4<br/>"
+        "▸ <b style='color:#00e5ff'>Training:</b> Federated Learning (FedProx)<br/>"
+        "▸ <b style='color:#00e5ff'>Preprocessing:</b> Gaussian Blur Subtraction<br/>"
+        "▸ <b style='color:#00e5ff'>Input:</b> 224×224 BGR resized"
+        "</div>",
+        unsafe_allow_html=True,
     )
 
-    # Main Page Header
-    st.title("👁️ Automated Diabetic Retinopathy Classification")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(
+        "<div style='color:#8a9bb0;font-size:11px;text-align:center;letter-spacing:0.1em;'>RETINASCAN · AI PROTOTYPE</div>",
+        unsafe_allow_html=True,
+    )
+
+    render_hero()
+    render_marquee()
+    render_features()
+
     st.markdown(
-        "This application uses a deep learning model trained with **Federated Learning** and **EfficientNetB4** "
-        "to screen retinal fundus images into 5 severity stages."
+        '<div class="section-header"><span class="dot"></span><h3> Upload Retinal Fundus Image</h3></div>',
+        unsafe_allow_html=True,
     )
-    st.markdown("---")
 
-    # File Upload Section
     uploaded_file = st.file_uploader(
-        "Choose a Retinal Fundus Image...", type=["png", "jpg", "jpeg"]
+        "Drag & drop or browse — supported formats: PNG, JPG, JPEG",
+        type=["png", "jpg", "jpeg"],
     )
 
     if uploaded_file is not None:
@@ -205,24 +611,25 @@ def main():
 
         col1, col2 = st.columns([1, 1])
 
-        # Preprocess Image
         with st.spinner("Applying visual enhancement & preprocessing..."):
             processed_img, enhanced_display = preprocess_fundus_image(image)
 
         with col1:
-            st.subheader("🖼️ Input vs Preprocessed Image")
-            img_tabs = st.tabs(["Preprocessed (Model Input)", "Original Raw Image"])
+            st.markdown(
+                '<div class="section-header"><span class="dot"></span><h3>🖼️ Image Analysis</h3></div>',
+                unsafe_allow_html=True,
+            )
+            img_tabs = st.tabs(["Preprocessed (Model Input)", "📷 Original Raw"])
             with img_tabs[0]:
                 st.image(
                     enhanced_display,
-                    caption="Enhanced Retinal View (Gaussian Subtraction)",
+                    caption="Enhanced Retinal View — Gaussian Subtraction Applied",
                     use_column_width=True,
                 )
             with img_tabs[1]:
                 st.image(image, caption="Original Uploaded Image", use_column_width=True)
 
-        # Model Inference
-        with st.spinner("Loading AI model & analyzing fundus image..."):
+        with st.spinner("Loading neural backbone & analyzing fundus image..."):
             model_tuple = load_dr_model()
             probs = predict(
                 processed_img, model_tuple, use_tta=use_tta, tta_steps=tta_steps
@@ -231,31 +638,39 @@ def main():
             confidence = float(probs[pred_class]) * 100
 
         with col2:
-            st.subheader("📊 Diagnostic Results")
+            st.markdown(
+                '<div class="section-header"><span class="dot"></span><h3>🎯 Diagnostic Results</h3></div>',
+                unsafe_allow_html=True,
+            )
 
             pred_label = CLASS_NAMES[pred_class]
             color = CLASS_COLORS[pred_class]
 
-            # Result Header Badge
             st.markdown(
                 f"""
-                <div style="background-color: {color}; padding: 15px; border-radius: 10px; color: white; text-align: center;">
-                    <h2 style="margin:0; color: white;">Stage {pred_class}: {pred_label}</h2>
-                    <h4 style="margin:0; opacity: 0.9; color: white;">Confidence: {confidence:.2f}%</h4>
+                <div class="result-badge" style="background: linear-gradient(135deg, {color}, {color}cc);">
+                    <div style="font-size:11px;letter-spacing:0.2em;opacity:0.85;margin-bottom:6px;">
+                        <span class="pulse-dot"></span>DIAGNOSTIC OUTPUT
+                    </div>
+                    <h2>Stage {pred_class} — {pred_label}</h2>
+                    <h4 style="opacity:0.92;margin-top:6px;">Confidence · {confidence:.2f}%</h4>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            st.write("")
-            st.markdown(f"**Description:** {CLASS_DESCRIPTIONS[pred_class]}")
+            st.markdown(
+                f"<div style='margin-top:14px;padding:14px;background:rgba(255,255,255,0.04);border-radius:12px;border-left:3px solid {color};'>"
+                f"<div style='font-size:11px;color:#8a9bb0;letter-spacing:0.15em;margin-bottom:6px;'>CLINICAL DESCRIPTION</div>"
+                f"<div style='color:#e6edf3;font-size:14px;line-height:1.6;'>{CLASS_DESCRIPTIONS[pred_class]}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
-            # Plot Probabilities
             df_probs = pd.DataFrame(
                 {
                     "Stage": [f"Stage {k}: {v}" for k, v in CLASS_NAMES.items()],
                     "Probability (%)": probs * 100,
-                    "Color": [CLASS_COLORS[i] for i in range(5)],
                 }
             )
 
@@ -270,24 +685,55 @@ def main():
                     f"Stage {k}: {v}": CLASS_COLORS[k] for k, v in CLASS_NAMES.items()
                 },
             )
-
             fig.update_traces(
                 texttemplate="%{text:.1f}%",
                 textposition="outside",
+                marker_line_width=0,
             )
             fig.update_layout(
                 showlegend=False,
-                xaxis=dict(range=[0, 115]),
-                height=300,
-                margin=dict(l=10, r=10, t=20, b=10),
+                xaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,0.05)", color="#b8c5d6"),
+                yaxis=dict(color="#b8c5d6"),
+                height=320,
+                margin=dict(l=10, r=10, t=30, b=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Space Grotesk", color="#e6edf3"),
+                title=dict(
+                    text="Probability Distribution Across DR Stages",
+                    font=dict(size=14, color="#ffffff"),
+                    x=0.02,
+                ),
             )
 
             st.plotly_chart(fig, use_container_width=True)
 
-            # Clinical Medical Disclaimer
             st.warning(
-                "⚠️ **Disclaimer:** This tool is an AI diagnostic assistance prototype and should not be used as a sole basis for clinical diagnosis. Please consult a licensed ophthalmologist."
+                "**Medical Disclaimer:** This tool is an AI diagnostic assistance prototype developed by AI Er. Gajendra Sahani and should not be used as a sole basis for clinical diagnosis. Please consult a licensed ophthalmologist."
             )
+    else:
+        st.markdown(
+            """
+            <div style="padding:40px;text-align:center;background:rgba(255,255,255,0.03);border-radius:16px;border:1px dashed rgba(0,229,255,0.25);margin-top:10px;">
+                <div style="font-size:48px;margin-bottom:12px;">👁️</div>
+                <div style="color:#b8c5d6;font-size:16px;font-weight:500;">Awaiting Fundus Image Upload</div>
+                <div style="color:#8a9bb0;font-size:13px;margin-top:6px;">Upload a retinal image above to begin AI-powered screening.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Footer
+    st.markdown(
+        """
+        <div class="footer">
+            <div>Built with <span class="accent">Streamlit</span> · <span class="accent">TensorFlow</span> · <span class="accent">EfficientNetB4</span> · <span class="accent">FedProx</span></div>
+            <div style="margin-top:6px;opacity:0.7;">© RetinaScan AI — Research prototype for educational purposes only.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 if __name__ == "__main__":
     main()
