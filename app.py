@@ -864,9 +864,9 @@ def main():
             )
             img_tabs = st.tabs(["🔬 Preprocessed (Model Input)", "📷 Original Raw"])
             with img_tabs[0]:
-                st.image(enhanced_display, caption="Enhanced Retinal View — Gaussian Subtraction Applied", use_column_width=True)
+                st.image(enhanced_display, caption="Enhanced Retinal View — Gaussian Subtraction Applied", use_container_width=True)
             with img_tabs[1]:
-                st.image(image, caption="Original Uploaded Image", use_column_width=True)
+                st.image(image, caption="Original Uploaded Image", use_container_width=True)
 
         with st.spinner("🧠 Loading neural backbone & analyzing fundus image..."):
             model_tuple = load_dr_model()
